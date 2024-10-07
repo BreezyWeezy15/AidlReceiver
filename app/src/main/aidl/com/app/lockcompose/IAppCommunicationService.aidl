@@ -1,8 +1,8 @@
 // IAppCommunicationService.aidl
-package com.app.lockcompose;
+package com.app.lockcomposeR;
+parcelable AppInfo;
 
-// Declare any non-default types here with import statements
-
+// Interface for communication between apps
 interface IAppCommunicationService {
-    void sendAppData(in List<String> selectedAppPackages, in String timeInterval, in String pinCode);
+    void sendAppData(in List<AppInfo> apps, in String interval, in String pinCode);
 }

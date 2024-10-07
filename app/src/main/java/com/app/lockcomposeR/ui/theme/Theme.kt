@@ -1,4 +1,4 @@
-package com.app.lockcompose.ui.theme
+package com.app.lockcomposeR.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

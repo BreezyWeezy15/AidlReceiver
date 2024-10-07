@@ -1,4 +1,4 @@
-package com.app.lockcompose
+package com.app.lockcomposeR
 
 import ShowAppList
 import android.accessibilityservice.AccessibilityService
@@ -42,8 +42,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.app.lockcompose.screens.WelcomeScreen
-import com.app.lockcompose.ui.theme.LockComposeTheme
+import com.app.lockcomposeR.screens.WelcomeScreen
+import com.app.lockcomposeR.ui.theme.LockComposeTheme
 import com.app.lockcomposeR.R
 
 class MainActivity : ComponentActivity() {

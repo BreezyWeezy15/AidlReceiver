@@ -1,4 +1,4 @@
-package com.app.lockcompose
+package com.app.lockcomposeR
 
 
 import android.accessibilityservice.AccessibilityService

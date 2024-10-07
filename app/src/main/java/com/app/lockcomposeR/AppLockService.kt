@@ -1,4 +1,4 @@
-package com.app.lockcompose
+package com.app.lockcomposeR
 
 import android.annotation.SuppressLint
 import android.app.Notification

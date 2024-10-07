@@ -1,4 +1,4 @@
-package com.app.lockcompose.ui.theme
+package com.app.lockcomposeR.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

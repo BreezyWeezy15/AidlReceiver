@@ -65,10 +65,13 @@ class LockScreenActivity : AppCompatActivity() {
             val passcode = passcodeBuilder.toString()
             if (passcode == "1234") {
                 edit.text.clear()
-                removePackage()
+                val packageName = intent.getStringExtra("PACKAGE_NAME")
+                if (packageName != null) {
+                    appLockManager.removePackage(packageName)
+                }
                 finishAffinity()
             } else {
-                Toast.makeText(this,"Pass code is wrong",Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
             }
         }
 

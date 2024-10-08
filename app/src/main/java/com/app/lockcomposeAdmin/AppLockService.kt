@@ -101,9 +101,7 @@ class AppLockService : Service() {
             val lockedPackages = appLockManager.getSelectedPackages()
 
             if (currentApp in lockedPackages) {
-                if (currentApp != null) {
-                    showLockScreen(currentApp)
-                }
+                showLockScreen(currentApp!!)
             }
         } else {
             Log.d("AppLockService", "No usage stats available.")

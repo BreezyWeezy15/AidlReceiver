@@ -1,4 +1,5 @@
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
@@ -41,9 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.app.lockcomposeAdmin.AppLockManager
+import com.app.lockcomposeAdmin.AppLockService
 import com.app.lockcomposeAdmin.R
 import com.app.lockcomposeAdmin.models.InstalledApps
-
 @Composable
 fun ShowAppList() {
     val context = LocalContext.current
@@ -80,7 +81,7 @@ fun ShowAppList() {
                 apps.add(InstalledApps(packageName, name, iconDrawable))
 
                 // Save the package name to the AppLockManager
-                appLockManager.addPackage(setOf(packageName))
+                appLockManager.addPackage(packageName)
 
                 // Set interval and pin code (assuming they are the same for all apps)
                 timeInterval = interval
@@ -95,6 +96,8 @@ fun ShowAppList() {
     // Fetch data from ContentProvider on first composition or after every insertion
     LaunchedEffect(Unit) {
         fetchDataFromContentProvider()
+        val serviceIntent = Intent(context, AppLockService::class.java)
+        context.startService(serviceIntent)
     }
 
     Column(
@@ -110,7 +113,10 @@ fun ShowAppList() {
                 AppListItem(
                     app = app,
                     timeInterval = timeInterval,
-                    onClick = { /* Handle app item click */ },
+                    onClick = {
+                        // Start the app lock service and pass the package name
+
+                    },
                     textColor = textColor,
                     cardBackgroundColor = cardBackgroundColor
                 )
@@ -127,7 +133,6 @@ fun ShowAppList() {
         )
     }
 }
-
 // Composable for rendering each app in the list
 @Composable
 fun AppListItem(

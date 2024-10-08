@@ -8,6 +8,7 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.util.Log
+import com.app.lockcomposeAdmin.AppLockManager
 
 class AppDataProvider : ContentProvider() {
 
@@ -31,14 +32,20 @@ class AppDataProvider : ContentProvider() {
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         when (uriMatcher.match(uri)) {
             URI_CODE_APPS -> {
+                val packageName = values?.getAsString("package_name")
                 val db = dbHelper.writableDatabase
-                val id = db.insert("apps", null, values)
 
-                if (id != -1L) {
-                    context?.contentResolver?.notifyChange(uri, null)
-                    return ContentUris.withAppendedId(CONTENT_URI, id)
+                val rowId = db.insert("apps", null, values)
+                if (rowId != -1L) {
+                    // Add the received package to the lock list
+                    val appLockManager = AppLockManager(context!!)
+                    packageName?.let {
+                        appLockManager.addPackage(it)
+                    }
+                    return Uri.withAppendedPath(CONTENT_URI, rowId.toString())
                 }
             }
+            else -> throw IllegalArgumentException("Unknown URI: $uri")
         }
         return null
     }

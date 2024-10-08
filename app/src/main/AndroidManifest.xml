@@ -46,6 +46,7 @@
 <!--            android:foregroundServiceType="specialUse"/>-->
 
 
+        <service android:name=".AppLockService"/>
         <activity android:name="com.app.lockcomposeAdmin.LockScreenActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:showOnLockScreen="true"
@@ -76,14 +77,6 @@
             android:exported="true"
             android:grantUriPermissions="true" />
 
-        <service
-            android:name=".AppCommunicationService"
-            android:exported="true"
-            android:permission="com.app.lockcomposeAdmin.BIND_COMMUNICATION_SERVICE">
-            <intent-filter>
-                <action android:name="com.app.lockcomposeAdmin.ACTION_BIND_COMMUNICATION_SERVICE" />
-            </intent-filter>
-        </service>
 
     </application>
 

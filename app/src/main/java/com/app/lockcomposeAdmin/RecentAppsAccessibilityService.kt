@@ -29,6 +29,9 @@ class RecentAppsAccessibilityService : AccessibilityService() {
     private lateinit var dbHelper: AppDatabaseHelper
     private var overlayView: View? = null
     private lateinit var windowManager: WindowManager
+    private val unlockTimes = mutableMapOf<String, Long>()  // Store the unlock times per app
+    private val lockedApps = mutableSetOf<String>()  // Keep track of locked apps
+
     companion object {
         private const val TAG = "RecentAppsService"
     }
@@ -37,16 +40,35 @@ class RecentAppsAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val myPackageName = applicationContext.packageName
 
+        // Ignore events from this app itself
         if (packageName == myPackageName) return
 
+        // Fetch locked packages and interval
         val lockedPackages = fetchLockedPackages()
 
+        // Loop through locked packages and check if the current package is locked
         if (packageName in lockedPackages) {
-            Toast.makeText(this,"",Toast.LENGTH_LONG).show()
-            showPartialOverlay(packageName)
+            // Get the unlock interval (in minutes) for the package
+            val unlockIntervalMinutes = getUnlockIntervalForApp(packageName)
+
+            // Check if the app was unlocked recently and should be ignored
+            val lastUnlockTime = unlockTimes[packageName]
+            if (lastUnlockTime != null && System.currentTimeMillis() - lastUnlockTime < unlockIntervalMinutes * 60 * 1000) {
+                // App is within the unlock interval, ignore it
+                return
+            }
+
+            // If the unlock interval has passed or the app was never unlocked, show the overlay
+            if (!lockedApps.contains(packageName)) {
+                lockedApps.add(packageName)  // Mark the app as locked
+                Toast.makeText(this, "Locked App Detected: $packageName", Toast.LENGTH_LONG).show()
+                showPartialOverlay(packageName)
+            }
+        } else {
+            // Check if any previously locked apps have exceeded their unlock interval
+            checkAndRemoveExpiredApps()
         }
     }
-
 
     override fun onInterrupt() {
         // Handle interruptions if needed
@@ -60,7 +82,6 @@ class RecentAppsAccessibilityService : AccessibilityService() {
             val cancelPermission = overlayLayout.findViewById<Button>(R.id.cancelPermission)
             val lockUi = overlayLayout.findViewById<LinearLayout>(R.id.lockUi)
 
-
             val layoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -69,10 +90,9 @@ class RecentAppsAccessibilityService : AccessibilityService() {
                 } else {
                     WindowManager.LayoutParams.TYPE_PHONE
                 },
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON ,
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 PixelFormat.TRANSPARENT
             )
-
 
             overlayView = overlayLayout
             windowManager.addView(overlayView, layoutParams)
@@ -81,27 +101,18 @@ class RecentAppsAccessibilityService : AccessibilityService() {
                 if (lockUi.visibility == View.GONE) {
                     lockUi.visibility = View.VISIBLE
                     askPermissionBtn.visibility = View.GONE
-                    cancelPermission.visibility  = View.VISIBLE
+                    cancelPermission.visibility = View.VISIBLE
                     showPassCodeUi(overlayLayout, packageName)
                 }
             }
 
             cancelPermission.setOnClickListener {
                 askPermissionBtn.visibility = View.VISIBLE
-                cancelPermission.visibility  = View.GONE
+                cancelPermission.visibility = View.GONE
                 lockUi.visibility = View.GONE
             }
-
         }
     }
-
-    private fun removeOverlay() {
-        overlayView?.let {
-            windowManager.removeView(it)
-            overlayView = null
-        }
-    }
-
 
     @SuppressLint("ClickableViewAccessibility")
     private fun showPassCodeUi(view: View, packageName: String) {
@@ -124,13 +135,18 @@ class RecentAppsAccessibilityService : AccessibilityService() {
 
         tick.setOnClickListener {
             val enteredPasscode = passcodeBuilder.toString()
-            if (packageName != null) {
+
+            if (packageName.isNotEmpty()) {
                 // Retrieve the correct pin code for the app from the database
                 val correctPinCode = getPinCodeForApp(packageName)
 
                 if (enteredPasscode == correctPinCode) {
+                    // App is unlocked, reset the unlock time
+                    unlockTimes[packageName] = System.currentTimeMillis()
+                    lockedApps.remove(packageName)  // Remove the app from locked apps
                     edit.text.clear()
                     Toast.makeText(this, "Unlocked successfully", Toast.LENGTH_LONG).show()
+                    removeOverlay()  // Remove the overlay after unlocking
                 } else {
                     Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
                 }
@@ -157,11 +173,16 @@ class RecentAppsAccessibilityService : AccessibilityService() {
             }
             false
         }
+    }
 
+    private fun removeOverlay() {
+        overlayView?.let {
+            windowManager.removeView(it)
+            overlayView = null
+        }
     }
 
     private fun addRemoveIcon(edit: EditText) {
-
         val drawableEnd = edit.compoundDrawablesRelative[2]
         if (drawableEnd != null) {
             val greenColor = ContextCompat.getColor(this, R.color.greenColor)
@@ -188,6 +209,25 @@ class RecentAppsAccessibilityService : AccessibilityService() {
             }
         }
         return null
+    }
+
+    private fun getUnlockIntervalForApp(packageName: String): Int {
+        val uri = Uri.parse("content://com.app.lockcomposeAdmin.provider/apps")
+        var interval = 1  // Default unlock interval is 1 minute
+
+        val cursor: Cursor? = contentResolver.query(
+            uri,
+            arrayOf("unlock_interval"),  // Assume "unlock_interval" is the column in the content provider
+            "package_name = ?",
+            arrayOf(packageName),
+            null
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                interval = it.getInt(it.getColumnIndexOrThrow("unlock_interval"))
+            }
+        }
+        return interval
     }
 
     private fun fetchLockedPackages(): List<String> {
@@ -219,5 +259,23 @@ class RecentAppsAccessibilityService : AccessibilityService() {
 
         return lockedPackages
     }
+
+    private fun checkAndRemoveExpiredApps() {
+        val currentTime = System.currentTimeMillis()
+
+        // Check for each locked app if the unlock interval has passed
+        lockedApps.toList().forEach { packageName ->
+            val unlockIntervalMinutes = getUnlockIntervalForApp(packageName)
+            val lastUnlockTime = unlockTimes[packageName]
+
+            // If the unlock time has expired and the app is still marked as locked
+            if (lastUnlockTime != null && currentTime - lastUnlockTime >= unlockIntervalMinutes * 60 * 1000) {
+                // Remove the app from the locked list
+                lockedApps.remove(packageName)
+                Toast.makeText(this, "$packageName has been unlocked automatically.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }
+
 

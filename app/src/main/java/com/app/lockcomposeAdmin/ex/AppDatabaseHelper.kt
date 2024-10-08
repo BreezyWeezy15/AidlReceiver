@@ -30,7 +30,8 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 $COLUMN_NAME TEXT NOT NULL,
                 $COLUMN_ICON BLOB,
                 $COLUMN_INTERVAL TEXT,
-                $COLUMN_PIN_CODE TEXT
+                $COLUMN_PIN_CODE TEXT,
+                UNIQUE($COLUMN_PACKAGE_NAME, $COLUMN_NAME) ON CONFLICT REPLACE
             )
         """.trimIndent()
         db?.execSQL(createTableSQL)
@@ -48,16 +49,37 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         return db.query(TABLE_APPS, null, null, null, null, null, null)
     }
 
-    // Method to insert a new app
+    // Method to insert a new app, remove duplicates before inserting
     fun insertApp(values: ContentValues?): Long {
         val db = writableDatabase
+        val packageName = values?.getAsString(COLUMN_PACKAGE_NAME)
+        val appName = values?.getAsString(COLUMN_NAME)
+
+        // Check if an entry with the same package name and app name already exists
+        val existingAppCursor = db.query(
+            TABLE_APPS,
+            arrayOf(COLUMN_ID),
+            "$COLUMN_PACKAGE_NAME = ? AND $COLUMN_NAME = ?",
+            arrayOf(packageName, appName),
+            null,
+            null,
+            null
+        )
+
+        // If a duplicate exists, remove it
+        if (existingAppCursor.moveToFirst()) {
+            val appId = existingAppCursor.getLong(existingAppCursor.getColumnIndexOrThrow(COLUMN_ID))
+            db.delete(TABLE_APPS, "$COLUMN_ID = ?", arrayOf(appId.toString()))
+        }
+        existingAppCursor.close()
+
+        // Insert the new app
         return db.insert(TABLE_APPS, null, values) ?: -1
     }
 
     // Method to delete an app by package name
     fun deleteApp(packageName: String?): Int {
-        // Open database for writing
-        val db = this.writableDatabase
-        return db.delete(TABLE_APPS, "package_name = ?", arrayOf(packageName))
+        val db = writableDatabase
+        return db.delete(TABLE_APPS, "$COLUMN_PACKAGE_NAME = ?", arrayOf(packageName))
     }
 }

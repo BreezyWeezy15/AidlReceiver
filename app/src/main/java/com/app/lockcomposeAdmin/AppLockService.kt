@@ -8,11 +8,14 @@ import android.app.PendingIntent
 import android.app.Service
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -29,7 +32,6 @@ class AppLockService : Service() {
         private const val NOTIFICATION_ID = 1
     }
 
-    private lateinit var appLockManager: AppLockManager
     private lateinit var sharedPreferences: SharedPreferences
     private val handler = Handler(Looper.getMainLooper())
     private val runnable = object : Runnable {
@@ -39,43 +41,14 @@ class AppLockService : Service() {
         }
     }
 
-    private val packageRemovalReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == "PACKAGE_REMOVED") {
-                val packageName = intent.getStringExtra("PACKAGE_NAME")
-                packageName?.let {
-                    appLockManager.removePackageFromAccessList(it)
-                    // Send an update broadcast
-                    val updateIntent = Intent("UPDATE_APP_LIST")
-                    sendBroadcast(updateIntent)
-                }
-            }
-        }
-    }
-
-    private val updateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == "UPDATE_APP_DATA") {
-                // Logic to update UI or internal state with new data
-                // You might want to refresh the list of apps here or notify observers
-            }
-        }
-    }
-
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
-        appLockManager = AppLockManager(this)
         sharedPreferences = getSharedPreferences("AppLockPrefs", Context.MODE_PRIVATE)
         createNotificationChannel()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
 
         handler.post(runnable)
-
-        // Register receivers
-        registerReceiver(packageRemovalReceiver, IntentFilter("PACKAGE_REMOVED"))
-        registerReceiver(updateReceiver, IntentFilter("UPDATE_APP_DATA"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -85,8 +58,6 @@ class AppLockService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(runnable)
-        unregisterReceiver(packageRemovalReceiver)
-        unregisterReceiver(updateReceiver)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -103,7 +74,8 @@ class AppLockService : Service() {
             val currentApp = sortedStats.firstOrNull()?.packageName
             Log.d("AppLockService", "Current top app: $currentApp")
 
-            val lockedPackages = appLockManager.getSelectedPackages()
+            // Get the list of locked packages from the content provider
+            val lockedPackages = fetchLockedPackagesFromContentProvider()
 
             if (currentApp in lockedPackages) {
                 showLockScreen(currentApp!!)
@@ -116,12 +88,32 @@ class AppLockService : Service() {
     private fun showLockScreen(packageName: String) {
         val lockIntent = Intent(this, LockScreenActivity::class.java)
         lockIntent.putExtra("PACKAGE_NAME", packageName)
+
+        // Get the list of locked packages from the content provider
+        val lockedPackages = fetchLockedPackagesFromContentProvider()
+        lockIntent.putStringArrayListExtra("LOCKED_PACKAGES", ArrayList(lockedPackages))
+
         lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(lockIntent)
     }
 
+    private fun fetchLockedPackagesFromContentProvider(): List<String> {
+        val contentResolver: ContentResolver = contentResolver
+        val uri = Uri.parse("content://com.app.lockcomposeAdmin.provider/apps")
+        val lockedPackages = mutableListOf<String>()
+
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val packageName = cursor.getString(cursor.getColumnIndexOrThrow("package_name"))
+                lockedPackages.add(packageName)
+            }
+        }
+
+        return lockedPackages
+    }
+
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 "App Lock Service Channel",

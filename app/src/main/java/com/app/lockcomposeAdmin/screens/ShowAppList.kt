@@ -3,12 +3,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -22,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,194 +47,158 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import com.app.lockcomposeAdmin.AppLockManager
 import com.app.lockcomposeAdmin.AppLockService
-import com.app.lockcomposeAdmin.R
-import com.app.lockcomposeAdmin.models.InstalledApps
-
 
 @Composable
 fun ShowAppList() {
     val context = LocalContext.current
-    val appLockManager = remember { AppLockManager(context) }
-    val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
-    val textColor = if (isDarkTheme) Color.White else Color.Black
-    val cardBackgroundColor = if (isDarkTheme) Color.DarkGray else Color.White
-
     var selectedApps by remember { mutableStateOf<List<InstalledApps>>(emptyList()) }
-    var timeInterval by remember { mutableStateOf("") }
-    var pinCode by remember { mutableStateOf("") }
 
-    // Fetch data from the ContentProvider
-    fun fetchDataFromContentProvider() {
-        val contentResolver = context.contentResolver
-        val uri = Uri.parse("content://com.app.lockcomposeAdmin.provider/apps")
-        val cursor = contentResolver.query(uri, null, null, null, null)
 
-        cursor?.use {
-            val apps = mutableListOf<InstalledApps>()
-            while (it.moveToNext()) {
-                val packageName = it.getString(it.getColumnIndexOrThrow("package_name"))
-                val name = it.getString(it.getColumnIndexOrThrow("name"))
-                val iconByteArray = it.getBlob(it.getColumnIndexOrThrow("icon"))
-                val interval = it.getString(it.getColumnIndexOrThrow("interval"))
-                val pin = it.getString(it.getColumnIndexOrThrow("pin_code"))
-
-                // Convert byte array to Bitmap and then to Drawable
-                val iconBitmap = BitmapFactory.decodeByteArray(iconByteArray, 0, iconByteArray.size)
-                val iconDrawable = BitmapDrawable(context.resources, iconBitmap)
-
-                // Add to the apps list
-                apps.add(InstalledApps(packageName, name, iconDrawable))
-
-                // Save the package name to the AppLockManager
-                appLockManager.addPackage(packageName)
-
-                // Set interval and pin code (assuming they are the same for all apps)
-                timeInterval = interval
-                pinCode = pin
-            }
-
-            // Update state and recompose
-            selectedApps = apps
-        }
+    LaunchedEffect(Unit) {
+        val serviceIntent = Intent(context, AppLockService::class.java)
+        context.startService(serviceIntent)
     }
 
-    // Create a BroadcastReceiver
-    val receiver = remember {
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                intent?.let {
-                    val newPincode = it.getStringExtra("pincode") // Adjust the key as per your sending app
-                    if (newPincode != null) {
-                        // Update the pinCode state when a new pincode is received
-                        pinCode = newPincode
-                    }
+    // Create and register ContentObserver
+    val contentObserver = remember {
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(self: Boolean) {
+                super.onChange(self)
+                fetchDataFromContentProvider(context) { apps ->
+                    selectedApps = apps // Update the app list
                 }
             }
         }
     }
 
-    // Register the receiver
     DisposableEffect(Unit) {
-        val filter = IntentFilter("com.app.lockcompose.UPDATE_PINCODE") // Adjust this to your action
-        context.registerReceiver(receiver, filter)
-
-        // Clean up the receiver when the composable leaves the composition
+        context.contentResolver.registerContentObserver(
+            Uri.parse("content://com.app.lockcomposeAdmin.provider/apps"),
+            true,
+            contentObserver
+        )
         onDispose {
-            context.unregisterReceiver(receiver)
+            context.contentResolver.unregisterContentObserver(contentObserver)
         }
     }
 
-    // Fetch data from ContentProvider on first composition or after every insertion
+    // Initial data fetch
     LaunchedEffect(Unit) {
-        fetchDataFromContentProvider()
-        val serviceIntent = Intent(context, AppLockService::class.java)
-        context.startService(serviceIntent)
+        fetchDataFromContentProvider(context) { apps ->
+            selectedApps = apps
+        }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundColor)
-            .padding(16.dp)
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(selectedApps) { app ->
-                AppListItem(
-                    app = app,
-                    timeInterval = timeInterval,
-                    onClick = {
-                        // Start the app lock service and pass the package name
-                    },
-                    textColor = textColor,
-                    cardBackgroundColor = cardBackgroundColor
-                )
+    // UI to display apps
+    LazyColumn {
+        items(selectedApps) { app ->
+            AppListItem(
+                app = app,
+                interval = app.interval,
+                pinCode = app.pinCode
+            ) {
+                // Unlock app logic here
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Display the PIN code
-        Text(
-            text = "PIN Code: $pinCode",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
-            color = textColor
-        )
     }
 }
 
-// Composable for rendering each app in the list
-@Composable
-fun AppListItem(
-    app: InstalledApps,  // Data class containing app details
-    timeInterval: String, // Interval to show under the app name
-    onClick: () -> Unit,  // Handle item clicks
-    textColor: Color,     // Color for the text
-    cardBackgroundColor: Color // Background color for the card
+// Function to fetch data from ContentProvider
+fun fetchDataFromContentProvider(
+    context: Context,
+    onDataFetched: (List<InstalledApps>) -> Unit
 ) {
-    // Convert Drawable to Bitmap for displaying the app icon
-    val iconBitmap = remember { app.icon?.toBitmap() }
+    val contentResolver = context.contentResolver
+    val uri = Uri.parse("content://com.app.lockcomposeAdmin.provider/apps")
+    val cursor = contentResolver.query(uri, null, null, null, null)
 
+    cursor?.use {
+        val apps = mutableListOf<InstalledApps>()
+        while (it.moveToNext()) {
+            val packageName = it.getString(it.getColumnIndexOrThrow("package_name"))
+            val name = it.getString(it.getColumnIndexOrThrow("name"))
+            val iconByteArray = it.getBlob(it.getColumnIndexOrThrow("icon"))
+            val interval = it.getString(it.getColumnIndexOrThrow("interval")) // Fetch interval
+            val pinCode = it.getString(it.getColumnIndexOrThrow("pin_code")) // Fetch pinCode
+
+            // Convert byte array to Bitmap and then to Drawable
+            val iconBitmap = BitmapFactory.decodeByteArray(iconByteArray, 0, iconByteArray.size)
+            val iconDrawable = BitmapDrawable(context.resources, iconBitmap)
+
+            // Create InstalledApps object with interval and pinCode
+            apps.add(InstalledApps(packageName, name, iconDrawable, interval, pinCode))
+        }
+        onDataFetched(apps) // Update state via callback
+    }
+}
+
+// Composable to display each app with interval and pin code
+@Composable
+fun AppListItem(app: InstalledApps, interval: String, pinCode: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(4.dp),
+        shape = RoundedCornerShape(12.dp) // Rounded card corners
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
         ) {
-            // Show the app icon
-            if (iconBitmap != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
-                    bitmap = iconBitmap.asImageBitmap(),
+                    bitmap = app.icon!!.toBitmap().asImageBitmap(),
                     contentDescription = app.name,
                     modifier = Modifier
                         .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(CircleShape) // Make the icon circular
+                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) // Add a border
                 )
-            } else {
-                // Provide a default image if the icon is null
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_background), // Replace with a placeholder resource
-                    contentDescription = app.name,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = app.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Interval and Pin Code Section
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.padding(start = 8.dp)
             ) {
                 Text(
-                    text = app.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 20.sp),
-                    color = textColor,
-                    overflow = TextOverflow.Ellipsis
+                    text = "Interval: $interval" + "Min",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Interval: $timeInterval",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor
+                    text = "Pin Code: $pinCode",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
+
+data class InstalledApps(
+    val packageName: String,
+    val name: String,
+    val icon: Drawable?,
+    val interval: String, // Add interval
+    val pinCode: String    // Add pinCode
+)

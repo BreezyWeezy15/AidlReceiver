@@ -57,7 +57,9 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "welcome") {
                     composable("welcome") { WelcomeScreen(navController) }
                     composable("main") { MainScreen(navController) }
-                    composable("showAppList") { ShowAppList() }
+                    composable("showAppList") {
+                        ShowAppList()
+                    }
                 }
             }
         }

@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.app.lockcomposeR"
+    namespace = "com.app.lockcomposeAdmin"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.app.lockcomposeR"
+        applicationId = "com.app.lockcomposeAdmin"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

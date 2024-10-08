@@ -1,4 +1,4 @@
-package com.app.lockcomposeR
+package com.app.lockcomposeAdmin
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -19,7 +19,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.app.lockcomposeR.R
+
 
 
 class AppLockService : Service() {

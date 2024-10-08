@@ -1,4 +1,4 @@
-package com.app.lockcomposeR.screens
+package com.app.lockcomposeAdmin.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.app.lockcomposeR.R
+import com.app.lockcomposeAdmin.R
 
 
 @Composable

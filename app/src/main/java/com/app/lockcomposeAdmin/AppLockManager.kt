@@ -1,4 +1,4 @@
-package com.app.lockcomposeR
+package com.app.lockcomposeAdmin
 
 import android.content.Context
 import android.content.SharedPreferences

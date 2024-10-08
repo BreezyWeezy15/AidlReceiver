@@ -1,4 +1,4 @@
-package com.app.lockcompose
+package com.app.lockcomposeAdmin
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

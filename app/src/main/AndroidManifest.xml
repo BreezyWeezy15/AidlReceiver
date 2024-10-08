@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
     <permission
-        android:name="com.app.lockcompose.permission.BIND_APP_SERVICE"
+        android:name="com.app.lockcomposeAdmin.BIND_COMMUNICATION_SERVICE"
         android:protectionLevel="signature" />
 
     <application
@@ -28,7 +28,7 @@
         android:theme="@style/Theme.LockCompose"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="com.app.lockcomposeAdmin.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.LockCompose">
@@ -42,9 +42,11 @@
 <!--        <service-->
 <!--            android:name=".OverlayService"-->
 <!--            android:permission="android.permission.SYSTEM_ALERT_WINDOW" />-->
-        <service android:name=".AppLockService"
-            android:foregroundServiceType="specialUse"/>
-        <activity android:name=".LockScreenActivity"
+<!--        <service android:name="com.app.lockcomposeAdmin.AppLockService"-->
+<!--            android:foregroundServiceType="specialUse"/>-->
+
+
+        <activity android:name="com.app.lockcomposeAdmin.LockScreenActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:showOnLockScreen="true"
             android:showWhenLocked="true"
@@ -55,7 +57,7 @@
             android:screenOrientation="portrait"/>
 
         <service
-            android:name=".RecentAppsAccessibilityService"
+            android:name="com.app.lockcomposeAdmin.RecentAppsAccessibilityService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -68,16 +70,20 @@
         </service>
 
 
-
+        <provider
+            android:name=".ex.AppDataProvider"
+            android:authorities="com.app.lockcomposeAdmin.provider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
 
         <service
             android:name=".AppCommunicationService"
             android:exported="true"
-             android:permission="com.app.lockcompose.permission.BIND_APP_SERVICE">
-        <intent-filter>
-            <action android:name="com.app.lockcompose.IAppCommunicationService" />
-        </intent-filter>
-    </service>
+            android:permission="com.app.lockcomposeAdmin.BIND_COMMUNICATION_SERVICE">
+            <intent-filter>
+                <action android:name="com.app.lockcomposeAdmin.ACTION_BIND_COMMUNICATION_SERVICE" />
+            </intent-filter>
+        </service>
 
     </application>
 

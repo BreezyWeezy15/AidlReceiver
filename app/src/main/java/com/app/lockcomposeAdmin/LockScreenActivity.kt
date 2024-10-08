@@ -1,4 +1,4 @@
-package com.app.lockcomposeR
+package com.app.lockcomposeAdmin
 
 
 import android.annotation.SuppressLint
@@ -16,7 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.app.lockcomposeR.R
+
 
 
 class LockScreenActivity : AppCompatActivity() {
@@ -110,6 +110,7 @@ class LockScreenActivity : AppCompatActivity() {
             if (lockedPackages.contains(packageName)) {
                 appLockManager.removePackage(packageName)
                 appLockManager.updateAccessList(packageName)
+
                 // Send a broadcast when a package is removed
                 val intent = Intent("PACKAGE_REMOVED")
                 intent.putExtra("PACKAGE_NAME", packageName)

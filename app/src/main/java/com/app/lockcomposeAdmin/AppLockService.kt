@@ -47,7 +47,6 @@ class AppLockService : Service() {
         createNotificationChannel()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
-
         handler.post(runnable)
     }
 

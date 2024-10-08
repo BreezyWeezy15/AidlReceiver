@@ -53,6 +53,15 @@ class AppLockService : Service() {
         }
     }
 
+    private val updateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == "UPDATE_APP_DATA") {
+                // Logic to update UI or internal state with new data
+                // You might want to refresh the list of apps here or notify observers
+            }
+        }
+    }
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
@@ -60,18 +69,13 @@ class AppLockService : Service() {
         sharedPreferences = getSharedPreferences("AppLockPrefs", Context.MODE_PRIVATE)
         createNotificationChannel()
         val notification = createNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
-        }
-        handler.post(runnable)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
-            registerReceiver(packageRemovalReceiver, IntentFilter("PACKAGE_REMOVED"), RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(packageRemovalReceiver, IntentFilter("PACKAGE_REMOVED"))
-        }
+        startForeground(NOTIFICATION_ID, notification)
 
+        handler.post(runnable)
+
+        // Register receivers
+        registerReceiver(packageRemovalReceiver, IntentFilter("PACKAGE_REMOVED"))
+        registerReceiver(updateReceiver, IntentFilter("UPDATE_APP_DATA"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -82,6 +86,7 @@ class AppLockService : Service() {
         super.onDestroy()
         handler.removeCallbacks(runnable)
         unregisterReceiver(packageRemovalReceiver)
+        unregisterReceiver(updateReceiver)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -139,5 +144,4 @@ class AppLockService : Service() {
             .setOngoing(true)
             .build()
     }
-
 }

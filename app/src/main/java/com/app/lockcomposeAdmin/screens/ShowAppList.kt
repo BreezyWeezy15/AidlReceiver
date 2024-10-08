@@ -1,5 +1,8 @@
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
@@ -25,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +49,8 @@ import com.app.lockcomposeAdmin.AppLockManager
 import com.app.lockcomposeAdmin.AppLockService
 import com.app.lockcomposeAdmin.R
 import com.app.lockcomposeAdmin.models.InstalledApps
+
+
 @Composable
 fun ShowAppList() {
     val context = LocalContext.current
@@ -93,6 +99,32 @@ fun ShowAppList() {
         }
     }
 
+    // Create a BroadcastReceiver
+    val receiver = remember {
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                intent?.let {
+                    val newPincode = it.getStringExtra("pincode") // Adjust the key as per your sending app
+                    if (newPincode != null) {
+                        // Update the pinCode state when a new pincode is received
+                        pinCode = newPincode
+                    }
+                }
+            }
+        }
+    }
+
+    // Register the receiver
+    DisposableEffect(Unit) {
+        val filter = IntentFilter("com.app.lockcompose.UPDATE_PINCODE") // Adjust this to your action
+        context.registerReceiver(receiver, filter)
+
+        // Clean up the receiver when the composable leaves the composition
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
+
     // Fetch data from ContentProvider on first composition or after every insertion
     LaunchedEffect(Unit) {
         fetchDataFromContentProvider()
@@ -115,7 +147,6 @@ fun ShowAppList() {
                     timeInterval = timeInterval,
                     onClick = {
                         // Start the app lock service and pass the package name
-
                     },
                     textColor = textColor,
                     cardBackgroundColor = cardBackgroundColor
@@ -133,6 +164,7 @@ fun ShowAppList() {
         )
     }
 }
+
 // Composable for rendering each app in the list
 @Composable
 fun AppListItem(

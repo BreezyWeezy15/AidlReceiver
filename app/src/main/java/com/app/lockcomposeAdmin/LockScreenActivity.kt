@@ -16,14 +16,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-
+import com.app.lockcomposeAdmin.ex.AppDatabaseHelper
 
 
 class LockScreenActivity : AppCompatActivity() {
 
     private lateinit var appLockManager: AppLockManager
-    private lateinit var lockUi : LinearLayout
-    private lateinit var askPermissionBtn : Button
+    private lateinit var lockUi: LinearLayout
+    private lateinit var askPermissionBtn: Button
+    private lateinit var dbHelper: AppDatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,19 +33,18 @@ class LockScreenActivity : AppCompatActivity() {
         lockUi = findViewById(R.id.lockUi)
         askPermissionBtn = findViewById(R.id.askPermission)
         askPermissionBtn.setOnClickListener {
-            if (lockUi.visibility == View.GONE){
+            if (lockUi.visibility == View.GONE) {
                 lockUi.visibility = View.VISIBLE
                 showPassCodeUi()
             }
         }
-        appLockManager = AppLockManager(this)
 
+        appLockManager = AppLockManager(this)
+        dbHelper = AppDatabaseHelper(this)
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun showPassCodeUi(){
-
-
+    private fun showPassCodeUi() {
         val btn0 = findViewById<TextView>(R.id.btn0)
         val btn1 = findViewById<TextView>(R.id.btn1)
         val btn2 = findViewById<TextView>(R.id.btn2)
@@ -62,16 +62,20 @@ class LockScreenActivity : AppCompatActivity() {
         val numberButtons = listOf(btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9)
 
         tick.setOnClickListener {
-            val passcode = passcodeBuilder.toString()
-            if (passcode == "1234") {
-                edit.text.clear()
-                val packageName = intent.getStringExtra("PACKAGE_NAME")
-                if (packageName != null) {
+            val enteredPasscode = passcodeBuilder.toString()
+            val packageName = intent.getStringExtra("PACKAGE_NAME")
+
+            if (packageName != null) {
+                // Retrieve the correct pin code for the app from the database
+                val correctPinCode = getPinCodeForApp(packageName)
+
+                if (enteredPasscode == correctPinCode) {
+                    edit.text.clear()
                     appLockManager.removePackage(packageName)
+                    finishAffinity()
+                } else {
+                    Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
                 }
-                finishAffinity()
-            } else {
-                Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -96,31 +100,31 @@ class LockScreenActivity : AppCompatActivity() {
             }
             false
         }
-
-
     }
 
-    private fun addRemoveIcon(edit : EditText){
+    private fun addRemoveIcon(edit: EditText) {
         val greenColor = ContextCompat.getColor(this, R.color.greenColor)
         val colorFilter = PorterDuffColorFilter(greenColor, PorterDuff.Mode.SRC_IN)
         edit.compoundDrawablesRelative[2]?.colorFilter = colorFilter
     }
 
-    private fun removePackage() {
-        val packageName = intent.getStringExtra("PACKAGE_NAME")
-        if (packageName != null) {
-            val lockedPackages = appLockManager.getSelectedPackages()
-            if (lockedPackages.contains(packageName)) {
-                appLockManager.removePackage(packageName)
-                appLockManager.updateAccessList(packageName)
-
-                // Send a broadcast when a package is removed
-                val intent = Intent("PACKAGE_REMOVED")
-                intent.putExtra("PACKAGE_NAME", packageName)
-                sendBroadcast(intent)
+    // Function to retrieve the pin code from the SQLite database for the app
+    private fun getPinCodeForApp(packageName: String): String? {
+        val db = dbHelper.readableDatabase
+        val cursor = db.query(
+            "apps",
+            arrayOf("pin_code"),
+            "package_name = ?",
+            arrayOf(packageName),
+            null,
+            null,
+            null
+        )
+        cursor.use {
+            if (it.moveToFirst()) {
+                return it.getString(it.getColumnIndexOrThrow("pin_code"))
             }
         }
+        return null
     }
-
 }
-

@@ -1,4 +1,4 @@
-package com.app.lockcomposeAdmin.ex
+package com.app.lockcomposeAdmin.helpers
 
 import android.content.ContentProvider
 import android.content.ContentUris

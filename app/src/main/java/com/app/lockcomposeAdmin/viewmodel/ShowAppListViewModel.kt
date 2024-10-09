@@ -1,31 +1,26 @@
 package com.app.lockcomposeAdmin.viewmodel
 
 import InstalledApps
+import android.app.Application
 import android.content.Context
-import android.database.ContentObserver
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.app.lockcomposeAdmin.ex.AppDatabaseHelper
+import com.app.lockcomposeAdmin.helpers.AppDatabaseHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class ShowAppListViewModel(private val context: Context) : ViewModel() {
+class ShowAppListViewModel(private val application: Application) : ViewModel() {
 
     private val _selectedAppsLiveData = MutableLiveData<List<InstalledApps>>()
     val selectedAppsLiveData: LiveData<List<InstalledApps>> = _selectedAppsLiveData
 
-    private val dbHelper = AppDatabaseHelper(context)
+    private val dbHelper = AppDatabaseHelper(application)
     private var job: Job? = null
 
     init {
@@ -51,7 +46,7 @@ class ShowAppListViewModel(private val context: Context) : ViewModel() {
                 val pinCode = it.getString(it.getColumnIndexOrThrow(AppDatabaseHelper.COLUMN_PIN_CODE))
 
                 val iconBitmap = BitmapFactory.decodeByteArray(iconByteArray, 0, iconByteArray.size)
-                val iconDrawable = BitmapDrawable(context.resources, iconBitmap)
+                val iconDrawable = BitmapDrawable(application.resources, iconBitmap)
 
                 apps.add(InstalledApps(packageName, name, iconDrawable, interval, pinCode))
             }

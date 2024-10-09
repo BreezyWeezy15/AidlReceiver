@@ -1,3 +1,4 @@
+import android.app.Application
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
@@ -31,14 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.app.lockcomposeAdmin.AppLockService
+import com.app.lockcomposeAdmin.services.AppLockService
 import com.app.lockcomposeAdmin.viewmodel.ShowAppListViewModel
 import com.app.lockcomposeAdmin.viewmodel.ShowAppListViewModelFactory
 
 @Composable
 fun ShowAppList() {
 
-    val context = LocalContext.current
+    val context = LocalContext.current.applicationContext as Application
     val viewModel: ShowAppListViewModel = viewModel(factory = ShowAppListViewModelFactory(context))
     val selectedApps by viewModel.selectedAppsLiveData.observeAsState(initial = emptyList())
 
@@ -47,6 +48,7 @@ fun ShowAppList() {
         val serviceIntent = Intent(context, AppLockService::class.java)
         context.startService(serviceIntent)
     }
+
     LazyColumn {
         items(selectedApps) { app ->
             AppListItem(

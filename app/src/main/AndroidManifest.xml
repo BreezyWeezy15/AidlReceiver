@@ -41,7 +41,7 @@
         </activity>
 
 
-        <service android:name=".AppLockService"
+        <service android:name=".services.AppLockService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse"/>
@@ -58,7 +58,7 @@
             android:screenOrientation="portrait"/>
 
         <service
-            android:name="com.app.lockcomposeAdmin.RecentAppsAccessibilityService"
+            android:name="com.app.lockcomposeAdmin.services.RecentAppsAccessibilityService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -69,50 +69,11 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
-
-
         <provider
-            android:name=".ex.AppDataProvider"
+            android:name=".helpers.AppDataProvider"
             android:authorities="com.app.lockcomposeAdmin.provider"
             android:exported="true"
             android:grantUriPermissions="true" />
-
-        <meta-data
-            android:name="io.sentry.dsn"
-            android:value="https://40bdf4f83dfa31d49836fc04a0cb23f2@o4506700413796352.ingest.us.sentry.io/4507663051522048"
-            />
-
-        <!-- enable automatic breadcrumbs for user interactions (clicks, swipes, scrolls) -->
-        <meta-data
-            android:name="io.sentry.traces.user-interaction.enable"
-            android:value="true"
-            />
-        <!-- enable screenshot for crashes -->
-        <meta-data
-            android:name="io.sentry.attach-screenshot"
-            android:value="true"
-            />
-        <!-- enable view hierarchy for crashes -->
-        <meta-data
-            android:name="io.sentry.attach-view-hierarchy"
-            android:value="true"
-            />
-
-        <!-- enable the performance API by setting a sample-rate, adjust in production env -->
-        <meta-data
-            android:name="io.sentry.traces.sample-rate"
-            android:value="1.0"
-            />
-        <!-- enable profiling when starting transactions, adjust in production env -->
-        <meta-data
-            android:name="io.sentry.traces.profiling.sample-rate"
-            android:value="1.0"
-            />
-        <!-- enable app start profiling -->
-        <meta-data
-            android:name="io.sentry.traces.profiling.enable-app-start"
-            android:value="true"
-            />
 
     </application>
 

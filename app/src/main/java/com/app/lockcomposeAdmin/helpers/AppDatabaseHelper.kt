@@ -1,4 +1,4 @@
-package com.app.lockcomposeAdmin.ex
+package com.app.lockcomposeAdmin.helpers
 
 import android.content.ContentValues
 import android.content.Context
@@ -38,7 +38,6 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        // Handle database upgrade as needed
         db?.execSQL("DROP TABLE IF EXISTS $TABLE_APPS")
         onCreate(db)
     }

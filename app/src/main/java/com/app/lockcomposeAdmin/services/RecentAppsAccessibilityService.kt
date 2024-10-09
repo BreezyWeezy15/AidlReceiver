@@ -1,9 +1,8 @@
-package com.app.lockcomposeAdmin
+package com.app.lockcomposeAdmin.services
 
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.database.Cursor
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
@@ -23,7 +22,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import com.app.lockcomposeAdmin.ex.AppDatabaseHelper
+import com.app.lockcomposeAdmin.R
+import com.app.lockcomposeAdmin.helpers.AppDatabaseHelper
 
 class RecentAppsAccessibilityService : AccessibilityService() {
     private lateinit var dbHelper: AppDatabaseHelper

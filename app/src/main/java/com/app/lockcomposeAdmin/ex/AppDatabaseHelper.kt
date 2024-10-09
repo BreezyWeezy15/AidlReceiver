@@ -43,13 +43,12 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         onCreate(db)
     }
 
-    // Method to get a cursor containing all apps
+
     fun getAppsCursor(): Cursor {
         val db = readableDatabase
         return db.query(TABLE_APPS, null, null, null, null, null, null)
     }
 
-    // Method to insert a new app, remove duplicates before inserting
     fun insertApp(values: ContentValues?): Long {
         val db = writableDatabase
         val packageName = values?.getAsString(COLUMN_PACKAGE_NAME)
@@ -77,7 +76,6 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         return db.insert(TABLE_APPS, null, values) ?: -1
     }
 
-    // Method to delete an app by package name
     fun deleteApp(packageName: String?): Int {
         val db = writableDatabase
         return db.delete(TABLE_APPS, "$COLUMN_PACKAGE_NAME = ?", arrayOf(packageName))

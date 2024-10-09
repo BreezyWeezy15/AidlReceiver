@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
@@ -21,7 +22,6 @@ import com.app.lockcomposeAdmin.ex.AppDatabaseHelper
 
 class LockScreenActivity : AppCompatActivity() {
 
-    private lateinit var appLockManager: AppLockManager
     private lateinit var lockUi: LinearLayout
     private lateinit var askPermissionBtn: Button
     private lateinit var dbHelper: AppDatabaseHelper
@@ -39,10 +39,9 @@ class LockScreenActivity : AppCompatActivity() {
             }
         }
 
-        appLockManager = AppLockManager(this)
+
         dbHelper = AppDatabaseHelper(this)
     }
-
     @SuppressLint("ClickableViewAccessibility")
     private fun showPassCodeUi() {
         val btn0 = findViewById<TextView>(R.id.btn0)
@@ -66,12 +65,11 @@ class LockScreenActivity : AppCompatActivity() {
             val packageName = intent.getStringExtra("PACKAGE_NAME")
 
             if (packageName != null) {
-                // Retrieve the correct pin code for the app from the database
                 val correctPinCode = getPinCodeForApp(packageName)
 
                 if (enteredPasscode == correctPinCode) {
                     edit.text.clear()
-                    appLockManager.removePackage(packageName)
+                    removePackage(packageName)
                     finishAffinity()
                 } else {
                     Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
@@ -101,14 +99,11 @@ class LockScreenActivity : AppCompatActivity() {
             false
         }
     }
-
     private fun addRemoveIcon(edit: EditText) {
         val greenColor = ContextCompat.getColor(this, R.color.greenColor)
         val colorFilter = PorterDuffColorFilter(greenColor, PorterDuff.Mode.SRC_IN)
         edit.compoundDrawablesRelative[2]?.colorFilter = colorFilter
     }
-
-    // Function to retrieve the pin code from the SQLite database for the app
     private fun getPinCodeForApp(packageName: String): String? {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
@@ -126,5 +121,9 @@ class LockScreenActivity : AppCompatActivity() {
             }
         }
         return null
+    }
+    private fun removePackage(packageName: String) {
+        val db = dbHelper.writableDatabase
+        val rowsDeleted = db.delete("apps", "package_name = ?", arrayOf(packageName))
     }
 }

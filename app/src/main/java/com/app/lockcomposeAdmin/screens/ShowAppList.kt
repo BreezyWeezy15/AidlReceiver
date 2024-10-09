@@ -1,25 +1,10 @@
-import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.database.ContentObserver
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -34,117 +19,51 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.app.lockcomposeAdmin.AppLockService
+import com.app.lockcomposeAdmin.viewmodel.ShowAppListViewModel
+import com.app.lockcomposeAdmin.viewmodel.ShowAppListViewModelFactory
 
 @Composable
 fun ShowAppList() {
+
     val context = LocalContext.current
-    var selectedApps by remember { mutableStateOf<List<InstalledApps>>(emptyList()) }
+    val viewModel: ShowAppListViewModel = viewModel(factory = ShowAppListViewModelFactory(context))
+    val selectedApps by viewModel.selectedAppsLiveData.observeAsState(initial = emptyList())
 
 
     LaunchedEffect(Unit) {
         val serviceIntent = Intent(context, AppLockService::class.java)
         context.startService(serviceIntent)
     }
-
-    // Create and register ContentObserver
-    val contentObserver = remember {
-        object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(self: Boolean) {
-                super.onChange(self)
-                fetchDataFromContentProvider(context) { apps ->
-                    selectedApps = apps // Update the app list
-                }
-            }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        context.contentResolver.registerContentObserver(
-            Uri.parse("content://com.app.lockcomposeAdmin.provider/apps"),
-            true,
-            contentObserver
-        )
-        onDispose {
-            context.contentResolver.unregisterContentObserver(contentObserver)
-        }
-    }
-
-    // Initial data fetch
-    LaunchedEffect(Unit) {
-        fetchDataFromContentProvider(context) { apps ->
-            selectedApps = apps
-        }
-    }
-
-    // UI to display apps
     LazyColumn {
         items(selectedApps) { app ->
             AppListItem(
                 app = app,
                 interval = app.interval,
                 pinCode = app.pinCode
-            ) {
-                // Unlock app logic here
-            }
+            )
         }
     }
 }
 
-// Function to fetch data from ContentProvider
-fun fetchDataFromContentProvider(
-    context: Context,
-    onDataFetched: (List<InstalledApps>) -> Unit
-) {
-    val contentResolver = context.contentResolver
-    val uri = Uri.parse("content://com.app.lockcomposeAdmin.provider/apps")
-    val cursor = contentResolver.query(uri, null, null, null, null)
-
-    cursor?.use {
-        val apps = mutableListOf<InstalledApps>()
-        while (it.moveToNext()) {
-            val packageName = it.getString(it.getColumnIndexOrThrow("package_name"))
-            val name = it.getString(it.getColumnIndexOrThrow("name"))
-            val iconByteArray = it.getBlob(it.getColumnIndexOrThrow("icon"))
-            val interval = it.getString(it.getColumnIndexOrThrow("interval")) // Fetch interval
-            val pinCode = it.getString(it.getColumnIndexOrThrow("pin_code")) // Fetch pinCode
-
-            // Convert byte array to Bitmap and then to Drawable
-            val iconBitmap = BitmapFactory.decodeByteArray(iconByteArray, 0, iconByteArray.size)
-            val iconDrawable = BitmapDrawable(context.resources, iconBitmap)
-
-            // Create InstalledApps object with interval and pinCode
-            apps.add(InstalledApps(packageName, name, iconDrawable, interval, pinCode))
-        }
-        onDataFetched(apps) // Update state via callback
-    }
-}
-
-// Composable to display each app with interval and pin code
 @Composable
-fun AppListItem(app: InstalledApps, interval: String, pinCode: String, onClick: () -> Unit) {
+fun AppListItem(app: InstalledApps, interval: String, pinCode: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable(onClick = onClick),
+            .padding(vertical = 8.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(12.dp) // Rounded card corners
     ) {
@@ -180,7 +99,7 @@ fun AppListItem(app: InstalledApps, interval: String, pinCode: String, onClick: 
                 modifier = Modifier.padding(start = 8.dp)
             ) {
                 Text(
-                    text = "Interval: $interval" + "Min",
+                    text = "Interval: $interval Min",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -199,6 +118,6 @@ data class InstalledApps(
     val packageName: String,
     val name: String,
     val icon: Drawable?,
-    val interval: String, // Add interval
-    val pinCode: String    // Add pinCode
+    val interval: String,
+    val pinCode: String
 )

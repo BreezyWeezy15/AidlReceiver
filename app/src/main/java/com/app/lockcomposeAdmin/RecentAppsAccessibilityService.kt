@@ -29,8 +29,8 @@ class RecentAppsAccessibilityService : AccessibilityService() {
     private lateinit var dbHelper: AppDatabaseHelper
     private var overlayView: View? = null
     private lateinit var windowManager: WindowManager
-    private val unlockTimes = mutableMapOf<String, Long>()  // Store the unlock times per app
-    private val lockedApps = mutableSetOf<String>()  // Keep track of locked apps
+    private val unlockTimes = mutableMapOf<String, Long>()
+    private val lockedApps = mutableSetOf<String>()
 
     companion object {
         private const val TAG = "RecentAppsService"
@@ -40,32 +40,23 @@ class RecentAppsAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val myPackageName = applicationContext.packageName
 
-        // Ignore events from this app itself
         if (packageName == myPackageName) return
-
-        // Fetch locked packages and interval
         val lockedPackages = fetchLockedPackages()
 
-        // Loop through locked packages and check if the current package is locked
         if (packageName in lockedPackages) {
-            // Get the unlock interval (in minutes) for the package
-            val unlockIntervalMinutes = getUnlockIntervalForApp(packageName)
 
-            // Check if the app was unlocked recently and should be ignored
+            val unlockIntervalMinutes = getUnlockIntervalForApp(packageName)
             val lastUnlockTime = unlockTimes[packageName]
             if (lastUnlockTime != null && System.currentTimeMillis() - lastUnlockTime < unlockIntervalMinutes * 60 * 1000) {
-                // App is within the unlock interval, ignore it
                 return
             }
 
-            // If the unlock interval has passed or the app was never unlocked, show the overlay
             if (!lockedApps.contains(packageName)) {
-                lockedApps.add(packageName)  // Mark the app as locked
+                lockedApps.add(packageName)
                 Toast.makeText(this, "Locked App Detected: $packageName", Toast.LENGTH_LONG).show()
                 showPartialOverlay(packageName)
             }
         } else {
-            // Check if any previously locked apps have exceeded their unlock interval
             checkAndRemoveExpiredApps()
         }
     }
@@ -137,16 +128,14 @@ class RecentAppsAccessibilityService : AccessibilityService() {
             val enteredPasscode = passcodeBuilder.toString()
 
             if (packageName.isNotEmpty()) {
-                // Retrieve the correct pin code for the app from the database
                 val correctPinCode = getPinCodeForApp(packageName)
 
                 if (enteredPasscode == correctPinCode) {
-                    // App is unlocked, reset the unlock time
                     unlockTimes[packageName] = System.currentTimeMillis()
                     lockedApps.remove(packageName)  // Remove the app from locked apps
                     edit.text.clear()
                     Toast.makeText(this, "Unlocked successfully", Toast.LENGTH_LONG).show()
-                    removeOverlay()  // Remove the overlay after unlocking
+                    removeOverlay()
                 } else {
                     Toast.makeText(this, "Passcode is incorrect", Toast.LENGTH_LONG).show()
                 }
@@ -217,7 +206,7 @@ class RecentAppsAccessibilityService : AccessibilityService() {
 
         val cursor: Cursor? = contentResolver.query(
             uri,
-            arrayOf("unlock_interval"),  // Assume "unlock_interval" is the column in the content provider
+            arrayOf("unlock_interval"),
             "package_name = ?",
             arrayOf(packageName),
             null
@@ -241,7 +230,7 @@ class RecentAppsAccessibilityService : AccessibilityService() {
                 val packageNameIndex = it.getColumnIndex("package_name")
                 if (packageNameIndex == -1) {
                     Log.e(TAG, "'package_name' column not found")
-                    return emptyList()  // Return empty list if column not found
+                    return emptyList()
                 }
 
                 while (it.moveToNext()) {
@@ -263,14 +252,10 @@ class RecentAppsAccessibilityService : AccessibilityService() {
     private fun checkAndRemoveExpiredApps() {
         val currentTime = System.currentTimeMillis()
 
-        // Check for each locked app if the unlock interval has passed
         lockedApps.toList().forEach { packageName ->
             val unlockIntervalMinutes = getUnlockIntervalForApp(packageName)
             val lastUnlockTime = unlockTimes[packageName]
-
-            // If the unlock time has expired and the app is still marked as locked
             if (lastUnlockTime != null && currentTime - lastUnlockTime >= unlockIntervalMinutes * 60 * 1000) {
-                // Remove the app from the locked list
                 lockedApps.remove(packageName)
                 Toast.makeText(this, "$packageName has been unlocked automatically.", Toast.LENGTH_SHORT).show()
             }

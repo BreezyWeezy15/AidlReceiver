@@ -74,12 +74,7 @@ The `ContentProvider` plays a vital role in maintaining data integrity and secur
 
 - **Seamless Navigation**: The use of Jetpack Compose and Navigation Components ensures a smooth and responsive user experience as users navigate through different screens in the app. Transitions between screens are designed to be fluid, contributing to an overall polished user experience.
 
-- **User Guidance**: The app provides clear instructions and prompts to guide users through the permission-granting process, ensuring they understand the importance of each permission and how it contributes to the app's functionality. This educational approach enhances user confidence and promotes better understanding of app security features.
-
 ## Usage
 
 To utilize the app effectively, users must grant all necessary permissions when prompted. Upon launching the app for the first time, users will encounter a series of permission requests. It is essential to grant these permissions to enable the full functionality of the app. After successfully granting the required permissions, users can lock specific applications by entering a unique passcode, which is stored and managed in the app's local database.
-
-The app's interface is designed to be intuitive, allowing users to navigate easily between different screens and manage their locked applications effectively. Users are encouraged to explore the app's features by locking various applications and testing the passcode functionality. The app provides a straightforward interface for managing these settings, ensuring a user-friendly experience.
-
 

@@ -1,4 +1,4 @@
-# Lock Screen Permission App
+# Lock Screen Permission App ( SERVER )
 
 This repository contains a sample Android application designed to illustrate the management of various permissions essential for implementing an app lock feature. The application is built using Jetpack Compose, a modern toolkit for building native UI in Android, enabling a responsive and visually appealing user interface. The primary goal of this project is to demonstrate best practices in permission handling while providing a secure mechanism to lock specific applications, ensuring that sensitive data remains protected.
 

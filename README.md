@@ -30,6 +30,38 @@ The `PermissionManager` class is a utility class responsible for handling all pe
 
 By centralizing permission management within this class, the app maintains a clean and organized code structure. The `PermissionManager` helps ensure that permissions are handled consistently throughout the app, reducing the risk of errors and enhancing maintainability.
 
+### 4. `LockService : Service()`
+
+`LockService` is a background service that plays a critical role in monitoring and enforcing the app lock functionality. This service continuously runs in the background, allowing it to detect when a user attempts to access a locked application. By utilizing system events, `LockService` identifies any interaction with apps that are designated as protected.
+
+When a locked application is opened, `LockService` triggers the display of the `LockScreenActivity`, effectively covering the screen and prompting the user to enter their passcode. This seamless transition ensures that unauthorized access is prevented, providing users with peace of mind regarding their data security.
+
+In addition to detecting app launches, `LockService` manages the lifecycle of the lock screen, ensuring it is appropriately displayed and dismissed based on user interactions. It acts as a gatekeeper, providing an added layer of protection by enforcing the passcode input system without requiring constant user intervention.
+
+### 5. `AccessibilityService : AccessibilityService()`
+
+The `AccessibilityService` class is utilized to monitor user interactions with the device, allowing the app to track when users switch between different applications. By leveraging accessibility features, this service enhances the app's capability to detect app launches and switch events.
+
+The primary function of the `AccessibilityService` is to listen for events that indicate a user has navigated to a new application. When the user switches to a locked app, the `AccessibilityService` communicates with `LockService` to activate the lock screen, prompting the user to enter their passcode.
+
+This integration ensures that users are consistently protected as they navigate their device. The `AccessibilityService` is essential for creating a smooth and secure experience, enabling the app to respond dynamically to user actions and maintain the integrity of the app lock feature.
+
+### 6. `DatabaseHelper : SQLiteOpenHelper`
+
+`DatabaseHelper` is a critical class responsible for managing the local SQLite database used to store passcodes and related application data securely. By extending `SQLiteOpenHelper`, this class facilitates the creation, updating, and querying of the database efficiently.
+
+The `DatabaseHelper` class includes methods to initialize the database schema, insert new passcodes, update existing ones, and retrieve passcodes associated with specific applications. This functionality ensures that users can easily set and manage their passcodes for various locked applications.
+
+Moreover, `DatabaseHelper` handles the database's lifecycle events, including creation and version management. This ensures that any changes to the database structure are seamlessly integrated without disrupting the user experience. By encapsulating all database interactions, `DatabaseHelper` simplifies data management and enhances code readability.
+
+### 7. `ContentProvider : ContentProvider()`
+
+`ContentProvider` is a component that serves as an interface for managing access to the application's data, allowing for data sharing between different apps while enforcing security measures. This class provides methods for querying, inserting, updating, and deleting passcode data stored in the local database.
+
+By implementing the `ContentProvider` interface, this class facilitates interaction with the SQLite database in a standardized way. It abstracts the underlying database operations, allowing other components within the app to access passcode information without directly interacting with the database itself.
+
+The `ContentProvider` plays a vital role in maintaining data integrity and security. It ensures that only authorized components can access sensitive information, such as passcodes, providing an additional layer of protection against unauthorized data access. This design pattern promotes separation of concerns, making the app more modular and easier to maintain.
+
 ## Features
 
 - **Comprehensive Permission Management**: The app systematically requests and manages essential permissions upon startup, ensuring users are informed of any missing permissions that are crucial for the app's functionality. It covers various permission types, including overlay, usage access, notification, and accessibility services, creating a holistic permission management system.
